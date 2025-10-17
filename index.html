@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameHub - Mini Games Collection</title>
+    <link rel="stylesheet" href="styles/index.css">
+
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon">🎮</div>
+            <h1>GameHub</h1>
+        </div>
+        <nav>
+            <a href="index.html" class="nav active">Home</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="stage">
+            <section class="hero">
+                <h1>Welcome to GameHub</h1>
+                <p>Discover a collection of fun and engaging mini games. Challenge yourself and have fun!</p>
+                <button class="btn" onclick="scrollToGames()">Explore Games</button>
+            </section>
+
+            <section id="games">
+                <h2 style="text-align: center; margin-bottom: 2rem;">Our Games Collection</h2>
+                <div class="games-grid">
+                    <a href="tictactoe.html" class="game-card">
+                        <div class="game-icon">⭕</div>
+                        <h3>Tic Tac Toe</h3>
+                        <p>Classic two-player strategy game. Get three in a row to win!</p>
+                    </a>
+
+                    <a href="guessnumber.html" class="game-card">
+                        <div class="game-icon">🔢</div>
+                        <h3>Guess the Number</h3>
+                        <p>Test your intuition by guessing the secret number!</p>
+                    </a>
+
+                    <a href="memory.html" class="game-card">
+                        <div class="game-icon">🧠</div>
+                        <h3>Memory Match</h3>
+                        <p>Train your memory by finding matching pairs of cards.</p>
+                    </a>
+
+                    <a href="snake.html" class="game-card">
+                        <div class="game-icon">🐍</div>
+                        <h3>Snake Game</h3>
+                        <p>Classic snake game. Eat food and grow without hitting walls!</p>
+                    </a>
+
+                    <a href="rps.html" class="game-card">
+                        <div class="game-icon">✂️</div>
+                        <h3>Rock Paper Scissors</h3>
+                        <p>Challenge the computer in this classic hand game.</p>
+                    </a>
+                </div>
+            </section>
+
+            <section class="features">
+                <div class="feature">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Easy to Play</h3>
+                    <p>Simple controls and intuitive gameplay for everyone.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Fast Loading</h3>
+                    <p>Lightweight games that load instantly in your browser.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">📱</div>
+                    <h3>Mobile Friendly</h3>
+                    <p>Play on any device - desktop, tablet, or mobile.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🏆</div>
+                    <h3>Track Progress</h3>
+                    <p>Keep track of your scores and improve your skills.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer style="text-align: center; padding: 2rem; color: var(--muted);">
+        <p>Made with ❤️ for gaming enthusiasts</p>
+    </footer>
+
+    <script>
+        function scrollToGames() {
+            document.getElementById('games').scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function () {
+            const cards = document.querySelectorAll('.game-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.classList.add('fade-in');
+            });
+        });
+    </script>
+</body>
+
+</html>
