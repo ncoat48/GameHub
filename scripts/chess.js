@@ -312,39 +312,35 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update the board rendering to handle dynamic sizing
     function updateBoardSize() {
         const board = document.getElementById('board');
-        const container = board.parentElement;
         const isFullscreen = !!document.fullscreenElement;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
 
         if (isFullscreen) {
-            // In fullscreen, use viewport-based sizing
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-
-            // Calculate optimal board size based on available space
-            const availableWidth = viewportWidth * 0.8;
-            const availableHeight = viewportHeight * 0.8;
-            const boardSize = Math.min(availableWidth, availableHeight, 800);
+            // On mobile, keep board smaller to avoid overflow
+            const boardSize =
+                vw < 600
+                    ? Math.min(vw * 0.9, vh * 0.9)
+                    : Math.min(vw * 0.8, vh * 0.8, 800);
 
             board.style.width = `${boardSize}px`;
             board.style.height = `${boardSize}px`;
         } else {
-            // In normal mode, use CSS variables
+            // Let CSS handle normal layout
             board.style.width = '';
             board.style.height = '';
         }
 
-        // Update piece font size based on current board size
+        // Adjust piece size proportionally
         const squares = board.querySelectorAll('.square');
         const squareSize = board.clientWidth / 8;
         const pieceSize = squareSize * 0.6;
-
-        squares.forEach(square => {
-            const piece = square.querySelector('.piece');
-            if (piece) {
-                piece.style.fontSize = `${pieceSize}px`;
-            }
+        squares.forEach(sq => {
+            const piece = sq.querySelector('.piece');
+            if (piece) piece.style.fontSize = `${pieceSize}px`;
         });
     }
+
 
     // Call this when window resizes or fullscreen changes
     window.addEventListener('resize', updateBoardSize);
