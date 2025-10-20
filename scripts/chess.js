@@ -312,36 +312,37 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update the board rendering to handle dynamic sizing
     function updateBoardSize() {
         const board = document.getElementById('board');
-        const container = board.parentElement;
-        const isFullscreen = !!document.fullscreenElement;
+        if (!board) return;
 
-        // Skip JS scaling on mobile (let CSS media queries handle it)
-        if (window.innerWidth < 768 && !isFullscreen) {
+        const isFullscreen = !!document.fullscreenElement;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        // Let CSS handle sizing on mobile, but force repaint after orientation/layout changes
+        if (vw < 768 && !isFullscreen) {
             board.style.width = '';
             board.style.height = '';
+            requestAnimationFrame(() => {
+                board.getBoundingClientRect(); // Force reflow
+            });
             return;
         }
 
-        if (isFullscreen) {
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-            const boardSize = Math.min(viewportWidth, viewportHeight) * 0.8;
-            board.style.width = `${boardSize}px`;
-            board.style.height = `${boardSize}px`;
-        } else {
-            board.style.width = '';
-            board.style.height = '';
-        }
+        // Fullscreen or desktop scaling logic
+        const boardSize = isFullscreen
+            ? Math.min(vw, vh) * 0.8
+            : Math.min(720, Math.min(vw * 0.9, vh * 0.9));
 
-        // Update piece font size dynamically
+        board.style.width = `${boardSize}px`;
+        board.style.height = `${boardSize}px`;
+
+        // Adjust font size dynamically
         const squares = board.querySelectorAll('.square');
         const squareSize = board.clientWidth / 8;
         const pieceSize = squareSize * 0.6;
         squares.forEach(square => {
             const piece = square.querySelector('.piece');
-            if (piece) {
-                piece.style.fontSize = `${pieceSize}px`;
-            }
+            if (piece) piece.style.fontSize = `${pieceSize}px`;
         });
     }
 
@@ -353,4 +354,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize the game
     initGame();
     updateBoardSize(); // Set initial size
+
+    // Initial size + delayed correction for mobile rendering lag
+    window.addEventListener('load', () => {
+        setTimeout(updateBoardSize, 200);
+        setTimeout(updateBoardSize, 800); // Second check fixes mobile scroll-then-fix issue
+    });
+
+    // Re-run on orientation change
+    window.addEventListener('orientationchange', () => {
+        setTimeout(updateBoardSize, 300);
+    });
+
 });
