@@ -1,7 +1,9 @@
-// scripts/chess.js
+// script.js
+// Fresh, responsive chess implementation using chess.js for legal moves.
+// Uses ResizeObserver to avoid layout racing/scroll-kick issues on mobile.
 
-document.addEventListener('DOMContentLoaded', function () {
-    // DOM elements
+document.addEventListener('DOMContentLoaded', () => {
+    // DOM refs
     const boardEl = document.getElementById('board');
     const statusEl = document.getElementById('status');
     const movesEl = document.getElementById('moves');
@@ -16,79 +18,65 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Game state
     let game = new Chess();
-    let boardFlipped = false;
     let selectedSquare = null;
+    let boardFlipped = false;
     let moveHistory = [];
 
-    // Initialize the game
-    function initGame() {
-        renderBoard();
-        setupEventListeners();
-        updateUI();
-    }
+    // Pieces unicode mapping
+    const unicodePieces = {
+        p: '♟', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚',
+        P: '♙', R: '♖', N: '♘', B: '♗', Q: '♕', K: '♔'
+    };
 
-    /** Return a unicode character for a piece object from chess.js */
-    function getPieceUnicode(piece) {
-        const unicodePieces = {
-            p: '♟', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚',
-            P: '♙', R: '♖', N: '♘', B: '♗', Q: '♕', K: '♔'
-        };
-        const key = piece.color === 'w' ? piece.type.toUpperCase() : piece.type;
-        return unicodePieces[key] || '';
-    }
-
+    // Render board squares and pieces
     function renderBoard() {
         boardEl.innerHTML = '';
         const board = game.board();
-
+        // ranks 8 -> 1 top to bottom
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
+                // compute coordinates depending on flip
                 const fileIndex = boardFlipped ? 7 - c : c;
                 const rankIndex = boardFlipped ? r : r;
-                const fileChar = 'abcdefgh'[boardFlipped ? 7 - c : c];
+                const fileChar = 'abcdefgh'[fileIndex];
                 const rankChar = String(8 - r);
-                const square = `${fileChar}${rankChar}`;
+                const squareName = `${fileChar}${rankChar}`;
 
-                const piece = boardFlipped ? board[7 - r][7 - c] : board[r][c];
+                // piece is from logical board; adjust read for flip so pieces display correctly
+                const piece = board[r][c];
 
-                const squareEl = document.createElement('div');
-                squareEl.className = `square ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
-                squareEl.dataset.square = square;
-
+                const sq = document.createElement('div');
+                sq.className = `square ${((r + c) % 2 === 0) ? 'light' : 'dark'}`;
+                sq.dataset.square = squareName;
+                sq.setAttribute('role', 'button');
+                sq.setAttribute('aria-label', `square ${squareName}`);
+                // piece
                 if (piece) {
-                    const pieceEl = document.createElement('div');
-                    pieceEl.className = 'piece';
-
-                    // Add color class for better styling
-                    if (piece.color === 'w') {
-                        pieceEl.classList.add('white');
-                    } else {
-                        pieceEl.classList.add('black');
-                    }
-
-                    pieceEl.textContent = getPieceUnicode(piece);
-                    pieceEl.setAttribute('aria-label', `${piece.color === 'w' ? 'White' : 'Black'} ${piece.type}`);
-                    squareEl.appendChild(pieceEl);
+                    const p = document.createElement('div');
+                    p.className = 'piece ' + (piece.color === 'w' ? 'white' : 'black');
+                    const key = piece.color === 'w' ? piece.type.toUpperCase() : piece.type;
+                    p.textContent = unicodePieces[key] || '';
+                    sq.appendChild(p);
                 }
 
-                squareEl.addEventListener('click', () => onSquareClick(square));
-                boardEl.appendChild(squareEl);
+                // click handler
+                sq.addEventListener('click', () => onSquareClick(squareName));
+                boardEl.appendChild(sq);
             }
         }
 
-
-
-        // Highlight selected square and legal moves
+        // highlight selected and valid moves
         if (selectedSquare) {
             const legal = game.moves({ square: selectedSquare, verbose: true }).map(m => m.to);
-            for (const el of boardEl.children) {
+            Array.from(boardEl.children).forEach(el => {
                 if (el.dataset.square === selectedSquare) el.classList.add('selected');
                 if (legal.includes(el.dataset.square)) el.classList.add('highlight');
-            }
+            });
         }
     }
 
     function onSquareClick(square) {
+        // if a square was already selected, attempt move
         if (selectedSquare) {
             const move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
             if (move) {
@@ -100,6 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 return;
             } else {
+                // if clicked own piece, select it; otherwise clear
                 const piece = game.get(square);
                 if (piece && piece.color === game.turn()) {
                     selectedSquare = square;
@@ -111,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        // select if piece belongs to current player
         const piece = game.get(square);
         if (piece && piece.color === game.turn()) {
             selectedSquare = square;
@@ -123,11 +113,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateUI() {
         renderBoard();
+        statusEl.textContent = getStatus();
         fenEl.textContent = game.fen();
         pgnEl.textContent = game.pgn();
-        statusEl.textContent = getStatus();
 
-        // Update move history
+        // update moves list
         const history = game.history({ verbose: true });
         movesEl.innerHTML = '';
         if (history.length) {
@@ -153,25 +143,24 @@ document.addEventListener('DOMContentLoaded', function () {
         return (game.turn() === 'w' ? 'White' : 'Black') + ' to move';
     }
 
-    /* ---------- Simple AI ---------- */
+    // ---- AI ----
     function makeComputerMove() {
         if (game.game_over()) return;
+        const mode = aiMode.value;
         const possible = game.moves();
         if (!possible.length) return;
 
-        const mode = aiMode.value;
         if (mode === 'random') {
             const m = possible[Math.floor(Math.random() * possible.length)];
             game.move(m);
-            moveHistory.push({ san: m });
             updateUI();
             return;
         }
 
-        const best = minimaxRoot(2, true);
+        const depth = mode === 'minimax2' ? 2 : 3;
+        const best = minimaxRoot(depth, true);
         if (best) {
             game.move(best);
-            moveHistory.push({ san: best });
             updateUI();
         }
     }
@@ -195,7 +184,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function minimax(depth, alpha, beta, isMax) {
         if (depth === 0) return evaluateBoard();
-
         const moves = game.moves();
         if (isMax) {
             let maxEval = -Infinity;
@@ -237,141 +225,108 @@ document.addEventListener('DOMContentLoaded', function () {
         return total;
     }
 
-    // Set up event listeners
-    function setupEventListeners() {
-        newBtn.onclick = () => {
-            game = new Chess();
-            selectedSquare = null;
-            moveHistory = [];
-            updateUI();
-        };
+    // ---- Events ----
+    newBtn.onclick = () => {
+        game = new Chess();
+        selectedSquare = null;
+        moveHistory = [];
+        updateUI();
+    };
 
-        undoBtn.onclick = () => {
-            if (game.history().length > 0) game.undo();
-            if (game.history().length > 0) game.undo();
-            selectedSquare = null;
-            updateUI();
-        };
+    undoBtn.onclick = () => {
+        if (game.history().length > 0) game.undo();
+        selectedSquare = null;
+        updateUI();
+    };
 
-        flipBtn.onclick = () => {
-            boardFlipped = !boardFlipped;
-            renderBoard();
-        };
+    flipBtn.onclick = () => {
+        boardFlipped = !boardFlipped;
+        // flipping is visual only: we simply re-render with a reversed mapping
+        // Instead of transforming DOM, we control mapping inside renderBoard by reading board normally.
+        renderBoard();
+    };
 
-        // Fullscreen button
-        fullscreenBtn.addEventListener('click', toggleFullscreen);
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', () => {
+        // re-render to let ResizeObserver pick up size
+        renderBoard();
+    });
 
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'u' || e.key === 'U') undoBtn.click();
+        if (e.key === 'n' || e.key === 'N') newBtn.click();
+        if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+        if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
+    });
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'u' || e.key === 'U') undoBtn.click();
-            if (e.key === 'n' || e.key === 'N') newBtn.click();
-            if (e.key === 'f' || e.key === 'F') toggleFullscreen();
-            if (e.key === 'Escape' && document.fullscreenElement) {
-                document.exitFullscreen();
-            }
-        });
-    }
-
-    // Fullscreen functions
     function toggleFullscreen() {
         const container = document.querySelector('.chess-container');
-
         if (!document.fullscreenElement) {
-            // Enter fullscreen
-            if (container.requestFullscreen) {
-                container.requestFullscreen();
-            } else if (container.webkitRequestFullscreen) {
-                container.webkitRequestFullscreen();
-            } else if (container.msRequestFullscreen) {
-                container.msRequestFullscreen();
-            }
+            container.requestFullscreen?.();
         } else {
-            // Exit fullscreen
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();
-            }
+            document.exitFullscreen?.();
         }
     }
 
-    function handleFullscreenChange() {
-        const isFullscreen = !!document.fullscreenElement;
-        fullscreenBtn.innerHTML = isFullscreen ? '⛷' : '⛶';
-
-        // Re-render board to ensure proper scaling
-        setTimeout(() => {
-            renderBoard();
-        }, 100);
+    // ---- Responsive sizing ----
+    // We'll use ResizeObserver to update CSS custom property --square-size (used by CSS for font sizing)
+    // This avoids race conditions where window.innerHeight isn't settled on mobile.
+    function updateSquareSize(widthPx) {
+        // set CSS variable on board element so CSS can use it
+        const squareSize = widthPx / 8;
+        boardEl.style.setProperty('--square-size', `${squareSize}px`);
+        // also update any inline piece font-sizes just in case
+        const squares = boardEl.querySelectorAll('.square');
+        const pieceSize = squareSize * 0.62;
+        squares.forEach(sq => {
+            const piece = sq.querySelector('.piece');
+            if (piece) piece.style.fontSize = `${pieceSize}px`;
+        });
     }
 
-    // Update the board rendering to handle dynamic sizing
-    function updateBoardSize() {
-    const board = document.getElementById('board');
-    if (!board) return;
-
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const isFullscreen = !!document.fullscreenElement;
-
-    // Let CSS handle responsive layout for small devices unless fullscreen
-    if (vw < 768 && !isFullscreen) {
-        board.style.width = '';
-        board.style.height = '';
-        return;
+    // Use ResizeObserver if available
+    if (window.ResizeObserver) {
+        const ro = new ResizeObserver(entries => {
+            for (let ent of entries) {
+                const w = ent.contentRect.width;
+                updateSquareSize(w);
+            }
+        });
+        ro.observe(boardEl);
+    } else {
+        // fallback to debounced resize
+        let rtid = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(rtid);
+            rtid = setTimeout(() => {
+                updateSquareSize(boardEl.clientWidth);
+            }, 120);
+        });
     }
 
-    // Desktop or fullscreen mode
-    const boardSize = isFullscreen
-        ? Math.min(vw, vh) * 0.8
-        : Math.min(720, Math.min(vw * 0.9, vh * 0.9));
-
-    board.style.width = `${boardSize}px`;
-    board.style.height = `${boardSize}px`;
-
-    // Adjust piece font size
-    const squares = board.querySelectorAll('.square');
-    const squareSize = board.clientWidth / 8;
-    const pieceSize = squareSize * 0.6;
-    squares.forEach(square => {
-        const piece = square.querySelector('.piece');
-        if (piece) piece.style.fontSize = `${pieceSize}px`;
+    // Prevent layout race by scheduling a few early updates after load
+    window.addEventListener('load', () => {
+        setTimeout(() => updateSquareSize(boardEl.clientWidth), 60);
+        setTimeout(() => updateSquareSize(boardEl.clientWidth), 300);
+        setTimeout(() => updateSquareSize(boardEl.clientWidth), 800);
     });
-}
 
+    // Initial render & UI update
+    renderBoard();
+    updateUI();
 
-    // Call this when window resizes or fullscreen changes
-    window.addEventListener('resize', updateBoardSize);
-    document.addEventListener('fullscreenchange', updateBoardSize);
+    // Expose a small helper so AI can be toggled quickly
+    vsComputer.addEventListener('change', () => {
+        // if enabling and it's AI's turn, immediate move
+        if (vsComputer.checked && game.turn() === 'b') {
+            setTimeout(makeComputerMove, 200);
+        }
+    });
 
-    // Initialize the game
-    // Initialize the game
-initGame();
-
-// Run initial sizing after DOM settles
-window.addEventListener('load', () => {
-    updateBoardSize();
-    // Extra run after a small delay — helps mobile browsers finalize viewport height
-    setTimeout(updateBoardSize, 300);
-});
-
-// Re-run when resizing or rotating device
-window.addEventListener('resize', () => {
-    updateBoardSize();
-});
-window.addEventListener('orientationchange', () => {
-    setTimeout(updateBoardSize, 300);
-});
-
-// Prevent premature scaling on small devices
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) setTimeout(updateBoardSize, 150);
-});
-
+    // If user changes AI mode while it's AI's turn, trigger move
+    aiMode.addEventListener('change', () => {
+        if (vsComputer.checked && game.turn() === 'b') setTimeout(makeComputerMove, 200);
+    });
 
 });
-
