@@ -628,93 +628,40 @@ select:focus {
     outline-offset: 2px;
 }
 
-/* styles/chess.css */
-
-/* ... (previous CSS remains the same until the fullscreen section) */
-
-/* Full Screen Styles */
+/* Responsive fullscreen layout */
 .chess-container:fullscreen {
     background: var(--darker);
-    padding: 2rem;
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: 3rem;
+    flex-wrap: wrap;
+    padding: 1rem;
+    gap: 1.5rem;
     width: 100vw;
     height: 100vh;
     overflow: auto;
 }
 
 .chess-container:fullscreen .board {
-    transform: none;
-    margin: 0;
-    width: min(80vh, 80vw);
-    height: min(80vh, 80vw);
+    width: min(85vmin, 90vw);
+    height: min(85vmin, 90vw);
     max-width: 800px;
     max-height: 800px;
 }
 
 .chess-container:fullscreen .game-panel {
-    max-width: 400px;
+    max-width: 90vw;
+    flex: 1 1 320px;
     height: auto;
-    max-height: 80vh;
     overflow-y: auto;
 }
 
-.chess-container:fullscreen .moves {
-    max-height: 200px;
-}
-
-/* Better fullscreen layout for different screen sizes */
-@media (max-width: 1024px) {
+/* Portrait screens */
+@media (orientation: portrait) {
     .chess-container:fullscreen {
         flex-direction: column;
-        gap: 1.5rem;
-        padding: 1rem;
-    }
-
-    .chess-container:fullscreen .board {
-        width: min(85vw, 85vh);
-        height: min(85vw, 85vh);
-        order: 1;
-    }
-
-    .chess-container:fullscreen .game-panel {
-        max-width: 90vw;
-        order: 2;
-    }
-}
-
-@media (max-height: 800px) {
-    .chess-container:fullscreen {
-        flex-direction: column;
-        gap: 1rem;
-        padding: 1rem;
-    }
-
-    .chess-container:fullscreen .board {
-        width: min(75vw, 75vh);
-        height: min(75vw, 75vh);
-        order: 1;
-    }
-
-    .chess-container:fullscreen .game-panel {
-        max-width: 90vw;
-        order: 2;
-    }
-
-    .chess-container:fullscreen .moves {
-        max-height: 150px;
-    }
-}
-
-/* Ensure board stays within viewport in fullscreen */
-@media (max-width: 768px) and (orientation: portrait) {
-    .chess-container:fullscreen {
-        flex-direction: column;
-        justify-content: flex-start;
-        padding-top: 2rem;
+        align-items: center;
     }
 
     .chess-container:fullscreen .board {
@@ -722,24 +669,4 @@ select:focus {
         height: 90vw;
     }
 }
-
-@media (max-height: 600px) {
-    .chess-container:fullscreen {
-        flex-direction: row;
-        gap: 1rem;
-        padding: 0.5rem;
-    }
-
-    .chess-container:fullscreen .board {
-        width: min(70vh, 70vw);
-        height: min(70vh, 70vw);
-    }
-
-    .chess-container:fullscreen .game-panel {
-        max-width: 300px;
-    }
-
-    .chess-container:fullscreen .moves {
-        max-height: 120px;
-    }
 }
