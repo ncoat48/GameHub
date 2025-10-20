@@ -312,32 +312,36 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update the board rendering to handle dynamic sizing
     function updateBoardSize() {
         const board = document.getElementById('board');
+        const container = board.parentElement;
         const isFullscreen = !!document.fullscreenElement;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
+
+        // Skip JS scaling on mobile (let CSS media queries handle it)
+        if (window.innerWidth < 768 && !isFullscreen) {
+            board.style.width = '';
+            board.style.height = '';
+            return;
+        }
 
         if (isFullscreen) {
-            // On mobile, keep board smaller to avoid overflow
-            const boardSize =
-                vw < 600
-                    ? Math.min(vw * 0.9, vh * 0.9)
-                    : Math.min(vw * 0.8, vh * 0.8, 800);
-
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const boardSize = Math.min(viewportWidth, viewportHeight) * 0.8;
             board.style.width = `${boardSize}px`;
             board.style.height = `${boardSize}px`;
         } else {
-            // Let CSS handle normal layout
             board.style.width = '';
             board.style.height = '';
         }
 
-        // Adjust piece size proportionally
+        // Update piece font size dynamically
         const squares = board.querySelectorAll('.square');
         const squareSize = board.clientWidth / 8;
         const pieceSize = squareSize * 0.6;
-        squares.forEach(sq => {
-            const piece = sq.querySelector('.piece');
-            if (piece) piece.style.fontSize = `${pieceSize}px`;
+        squares.forEach(square => {
+            const piece = square.querySelector('.piece');
+            if (piece) {
+                piece.style.fontSize = `${pieceSize}px`;
+            }
         });
     }
 
